@@ -3,11 +3,11 @@ use std::{
     io::{Write, stdin, stdout},
 };
 
-use banish::{HostsFile, extract_domain, get_hosts_file_contents, write_hosts_file};
+use banish::{Domain, HostsFile, get_hosts_file_contents, write_hosts_file};
 
 fn main() {
     let url = env::args().nth(1).expect("url required");
-    let Ok(domain) = extract_domain(&url) else {
+    let Ok(domain) = Domain::parse(&url) else {
         // FIXME: return an Err Result
         eprintln!("Unable to parse domain from input.");
         return;
@@ -29,7 +29,7 @@ fn main() {
     };
 
     // if domain already banished, return early
-    if hosts_file.is_banished(domain) {
+    if hosts_file.is_banished(&domain) {
         // FIXME: return an Err Result
         eprintln!("Domain is already banished.");
         return;
@@ -37,12 +37,12 @@ fn main() {
 
     // if we need to process the url to extract a domain,
     // confirm the domain with the user first
-    if domain != url {
-        confirm_domain(domain);
+    if domain.domain() != url {
+        confirm_domain(&domain);
     }
 
     // add domain to list
-    let Ok(_) = hosts_file.banish(domain) else {
+    let Ok(_) = hosts_file.banish(&domain) else {
         // FIXME: return an Err Result
         eprintln!("Unable to banish domain.");
         return;
@@ -59,7 +59,7 @@ fn main() {
     println!("{} banished.", domain);
 }
 
-fn confirm_domain(domain: &str) {
+fn confirm_domain(domain: &Domain) {
     print!("Will banish {}. Press Enter to proceed.", domain);
     let _ = stdout().flush();
     let mut input = String::new();
