@@ -126,7 +126,6 @@ impl HostsFile {
             return Err("domain already banished".to_owned());
         }
         self.banished.push(domain.clone());
-        // FIXME: need to sort with initial www excluded
         self.banished.sort();
         Ok(())
     }
