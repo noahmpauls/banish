@@ -1,9 +1,6 @@
-use std::{
-    env,
-    fs::{self, File},
-    io::Write,
-    path::Path,
-};
+use std::{fs, io::Write};
+
+use tempfile::NamedTempFile;
 
 use crate::domain::Domain;
 
@@ -92,15 +89,13 @@ impl HostsFile {
 }
 
 pub fn write_hosts_file(contents: &str) -> Result<(), String> {
-    // FIXME: use a proper temp file name
-    let temp_file_path = Path::join(env::temp_dir().as_path(), "banishhosts");
-    let Ok(mut temp_file) = File::create(&temp_file_path) else {
+    let Ok(mut temp_file) = NamedTempFile::new() else {
         return Err("cannot create temporary hosts file".to_owned());
     };
     let Ok(_) = write!(temp_file, "{}", contents) else {
         return Err("failed to write to temporary hosts file".to_owned());
     };
-    let Ok(_) = fs::rename(&temp_file_path, "/etc/hosts") else {
+    let Ok(_) = fs::rename(&temp_file, "/etc/hosts") else {
         return Err("failed to rename temporary hosts file to /etc/hosts".to_owned());
     };
     Ok(())

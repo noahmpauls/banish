@@ -46,10 +46,10 @@ impl Display for Domain {
 impl Ord for Domain {
     fn cmp(&self, other: &Self) -> Ordering {
         let segments = self.segments.iter().zip(other.segments.iter());
-        let result = segments
+        segments
             .map(|(a, b)| a.cmp(&b))
-            .find(|c| *c != Ordering::Equal);
-        result.unwrap_or(self.segments.len().cmp(&other.segments.len()))
+            .find(|c| *c != Ordering::Equal)
+            .unwrap_or(self.segments.len().cmp(&other.segments.len()))
     }
 }
 
