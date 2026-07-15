@@ -1,6 +1,10 @@
-use std::{fs, io::Write};
+use std::{
+    fs::{self, Permissions},
+    io::Write,
+    os::unix::fs::PermissionsExt,
+};
 
-use tempfile::NamedTempFile;
+use tempfile::Builder;
 
 use crate::domain::Domain;
 
@@ -88,7 +92,10 @@ impl HostsFile {
 }
 
 pub fn write_hosts_file(contents: &str) -> crate::error::Result<()> {
-    let mut temp_file = NamedTempFile::new()?;
+    let mut temp_file = Builder::new()
+        .prefix("banish")
+        .permissions(Permissions::from_mode(0o644))
+        .tempfile()?;
     write!(temp_file, "{}", contents)?;
     fs::rename(&temp_file, "/etc/hosts")?;
     Ok(())
