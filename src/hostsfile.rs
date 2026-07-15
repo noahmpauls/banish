@@ -72,8 +72,14 @@ impl HostsFile {
         }
 
         result.push_str(&format!("{}\n", BANISH_START));
+        let pad = self
+            .banished
+            .iter()
+            .map(|d| d.domain().chars().count())
+            .max()
+            .unwrap();
         for domain in self.banished.iter() {
-            result.push_str(&format!("0.0.0.0 {}\n", domain.construct_for_hosts()));
+            result.push_str(&format!("0.0.0.0 {:>pad$}\n", domain.domain(), pad = pad));
         }
         result.push_str(&format!("{}\n", BANISH_END));
 

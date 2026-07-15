@@ -3,7 +3,7 @@ use std::{cmp::Ordering, fmt::Display};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Domain {
     domain: String,
-    sort_key: String,
+    segments: Vec<String>,
 }
 
 impl Domain {
@@ -28,20 +28,8 @@ impl Domain {
                 return Err("domain contains invalid characters".to_owned());
             }
         }
-        let sort_key = if domain.starts_with("www.") {
-            domain[4..].to_owned()
-        } else {
-            domain.clone()
-        };
-        Ok(Self { domain, sort_key })
-    }
-
-    pub fn construct_for_hosts(&self) -> String {
-        if self.domain != self.sort_key {
-            self.domain.clone()
-        } else {
-            format!("    {}", self.domain)
-        }
+        let segments = domain.split('.').map(|s| s.to_owned()).rev().collect();
+        Ok(Self { domain, segments })
     }
 
     pub fn domain(&self) -> &str {
@@ -57,12 +45,11 @@ impl Display for Domain {
 
 impl Ord for Domain {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.sort_key != other.sort_key {
-            self.sort_key.cmp(&other.sort_key)
-        } else {
-            // place non-www domain first
-            other.domain.cmp(&self.domain)
-        }
+        let segments = self.segments.iter().zip(other.segments.iter());
+        let result = segments
+            .map(|(a, b)| a.cmp(&b))
+            .find(|c| *c != Ordering::Equal);
+        result.unwrap_or(self.segments.len().cmp(&other.segments.len()))
     }
 }
 
