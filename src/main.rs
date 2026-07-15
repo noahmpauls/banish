@@ -3,7 +3,10 @@ use std::{
     io::{Write, stdin, stdout},
 };
 
-use banish::{Domain, HostsFile, get_hosts_file_contents, write_hosts_file};
+use banish::{
+    domain::Domain,
+    hostsfile::{HostsFile, read_hosts_file, write_hosts_file},
+};
 
 fn main() {
     let url = env::args().nth(1).expect("url required");
@@ -15,7 +18,7 @@ fn main() {
 
     // if there is no /etc/hosts file
     // - fatal error, don't try to create it
-    let Ok(hosts_file_contents) = get_hosts_file_contents() else {
+    let Ok(hosts_file_contents) = read_hosts_file() else {
         // FIXME: return an Err Result
         eprintln!("Unable to retrieve contents of /etc/hosts file.");
         return;
