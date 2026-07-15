@@ -19,9 +19,15 @@ impl Domain {
             segments[0]
         };
         // split on path separator and take everything before
-        // FIXME: will error on absolute path, probably
         let domain = domain_and_path.split('/').next().unwrap().to_owned();
-        // FIXME: need to validate that remaining segment is a valid domain
+        if domain.is_empty() {
+            return Err("input does not contain domain".to_owned());
+        }
+        for c in domain.chars() {
+            if !(c.is_ascii_alphanumeric() || c == '.' || c == '-') {
+                return Err("domain contains invalid characters".to_owned());
+            }
+        }
         let sort_key = if domain.starts_with("www.") {
             domain[4..].to_owned()
         } else {
@@ -110,6 +116,20 @@ mod tests {
         let input = "https://test/a/b/c/";
         let output = Domain::parse(input).unwrap();
         assert_eq!("test", output.domain);
+    }
+
+    #[test]
+    fn absolute_path() {
+        let input = "/thing";
+        let output = Domain::parse(input);
+        assert!(output.is_err());
+    }
+
+    #[test]
+    fn invalid_domain_chars() {
+        let input = "https://abc.X-Y-Z.%.123/test";
+        let output = Domain::parse(input);
+        assert!(output.is_err());
     }
 
     #[test]
