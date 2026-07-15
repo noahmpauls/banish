@@ -1,41 +1,43 @@
 use std::{
     env,
     io::{Write, stdin, stdout},
+    process::ExitCode,
 };
 
 use banish::{
     domain::Domain,
+    error::BanishError,
     hostsfile::{HostsFile, read_hosts_file, write_hosts_file},
 };
 
-fn main() {
-    let url = env::args().nth(1).expect("url required");
-    let Ok(domain) = Domain::parse(&url) else {
-        // FIXME: return an Err Result
-        eprintln!("Unable to parse domain from input.");
-        return;
-    };
+fn main() -> ExitCode {
+    match main_with_error() {
+        Ok(_) => ExitCode::SUCCESS,
+        Err(err) => {
+            eprintln!("Error: {}", err);
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn main_with_error() -> banish::error::Result<()> {
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        return Err(BanishError::BadArgs);
+    }
+    let url = &args[1];
+    let domain = Domain::parse(&url)?;
 
     // if there is no /etc/hosts file
     // - fatal error, don't try to create it
-    let Ok(hosts_file_contents) = read_hosts_file() else {
-        // FIXME: return an Err Result
-        eprintln!("Unable to retrieve contents of /etc/hosts file.");
-        return;
-    };
+    let hosts_file_contents = read_hosts_file()?;
 
     // parse /etc/hosts file
-    let Ok(mut hosts_file) = HostsFile::parse(&hosts_file_contents) else {
-        // FIXME: return an Err Result
-        eprintln!("Unable to parse /etc/hosts file.");
-        return;
-    };
+    let mut hosts_file = HostsFile::parse(&hosts_file_contents)?;
 
     // if domain already banished, return early
     if hosts_file.is_banished(&domain) {
-        // FIXME: return an Err Result
-        eprintln!("Domain is already banished.");
-        return;
+        return Err(BanishError::AlreadyBanished(domain.to_string()));
     }
 
     // if we need to process the url to extract a domain,
@@ -45,21 +47,14 @@ fn main() {
     }
 
     // add domain to list
-    let Ok(_) = hosts_file.banish(&domain) else {
-        // FIXME: return an Err Result
-        eprintln!("Unable to banish domain.");
-        return;
-    };
+    hosts_file.banish(&domain);
 
     // write /etc/hosts file
-    let Ok(_) = write_hosts_file(&hosts_file.construct()) else {
-        // FIXME: return an Err Result
-        eprintln!("Unable to write /etc/hosts file.");
-        return;
-    };
+    write_hosts_file(&hosts_file.construct())?;
 
     // print and return
     println!("{} banished.", domain);
+    Ok(())
 }
 
 fn confirm_domain(domain: &Domain) {

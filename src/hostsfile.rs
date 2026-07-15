@@ -7,10 +7,8 @@ use crate::domain::Domain;
 const BANISH_START: &str = "### BANISH START";
 const BANISH_END: &str = "### BANISH END";
 
-pub fn read_hosts_file() -> Result<String, String> {
-    let Ok(contents) = fs::read_to_string("/etc/hosts") else {
-        return Err("unable to read /etc/hosts".to_owned());
-    };
+pub fn read_hosts_file() -> crate::error::Result<String> {
+    let contents = fs::read_to_string("/etc/hosts")?;
     Ok(contents)
 }
 
@@ -22,7 +20,7 @@ pub struct HostsFile {
 }
 
 impl HostsFile {
-    pub fn parse(contents: &str) -> Result<Self, String> {
+    pub fn parse(contents: &str) -> crate::error::Result<Self> {
         let mut lines = contents.lines();
         let mut before = vec![];
         for line in lines.by_ref() {
@@ -36,6 +34,7 @@ impl HostsFile {
             if line.starts_with(BANISH_END) {
                 break;
             }
+            // FIXME: assumes expected formatting
             let domain = line.split_whitespace().nth(1).unwrap();
             let domain = Domain::parse(&domain).unwrap();
             banished.push(domain);
@@ -52,13 +51,13 @@ impl HostsFile {
         self.banished.iter().any(|s| s == domain)
     }
 
-    pub fn banish(&mut self, domain: &Domain) -> Result<(), String> {
+    pub fn banish(&mut self, domain: &Domain) -> bool {
         if self.is_banished(domain) {
-            return Err("domain already banished".to_owned());
+            return false;
         }
         self.banished.push(domain.clone());
         self.banished.sort();
-        Ok(())
+        true
     }
 
     pub fn construct(&self) -> String {
@@ -88,15 +87,9 @@ impl HostsFile {
     }
 }
 
-pub fn write_hosts_file(contents: &str) -> Result<(), String> {
-    let Ok(mut temp_file) = NamedTempFile::new() else {
-        return Err("cannot create temporary hosts file".to_owned());
-    };
-    let Ok(_) = write!(temp_file, "{}", contents) else {
-        return Err("failed to write to temporary hosts file".to_owned());
-    };
-    let Ok(_) = fs::rename(&temp_file, "/etc/hosts") else {
-        return Err("failed to rename temporary hosts file to /etc/hosts".to_owned());
-    };
+pub fn write_hosts_file(contents: &str) -> crate::error::Result<()> {
+    let mut temp_file = NamedTempFile::new()?;
+    write!(temp_file, "{}", contents)?;
+    fs::rename(&temp_file, "/etc/hosts")?;
     Ok(())
 }

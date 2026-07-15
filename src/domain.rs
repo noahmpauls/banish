@@ -1,5 +1,7 @@
 use std::{cmp::Ordering, fmt::Display};
 
+use crate::error::BanishError;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Domain {
     domain: String,
@@ -7,11 +9,13 @@ pub struct Domain {
 }
 
 impl Domain {
-    pub fn parse(url: &str) -> Result<Self, String> {
+    pub fn parse(url: &str) -> crate::error::Result<Self> {
         // split on protocol separator and take everything after
         let segments: Vec<&str> = url.split("://").collect();
         if segments.len() > 2 {
-            return Err("input contains multiple protocol separators".to_owned());
+            return Err(BanishError::DomainParse(
+                "input contains multiple protocol separators".to_owned(),
+            ));
         }
         let domain_and_path = if segments.len() == 2 {
             segments[1]
@@ -21,11 +25,15 @@ impl Domain {
         // split on path separator and take everything before
         let domain = domain_and_path.split('/').next().unwrap().to_owned();
         if domain.is_empty() {
-            return Err("input does not contain domain".to_owned());
+            return Err(BanishError::DomainParse(
+                "input does not contain domain".to_owned(),
+            ));
         }
         for c in domain.chars() {
             if !(c.is_ascii_alphanumeric() || c == '.' || c == '-') {
-                return Err("domain contains invalid characters".to_owned());
+                return Err(BanishError::DomainParse(
+                    "domain contains invalid characters".to_owned(),
+                ));
             }
         }
         let segments = domain.split('.').map(|s| s.to_owned()).rev().collect();
