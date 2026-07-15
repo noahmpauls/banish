@@ -26,7 +26,7 @@ fn main_with_error() -> banish::error::Result<()> {
         return Err(BanishError::BadArgs);
     }
     let url = &args[1];
-    let domain = Domain::parse(&url)?;
+    let domain = Domain::parse(url)?;
 
     // if there is no /etc/hosts file
     // - fatal error, don't try to create it

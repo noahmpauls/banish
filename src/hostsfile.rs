@@ -36,7 +36,7 @@ impl HostsFile {
             }
             // FIXME: assumes expected formatting
             let domain = line.split_whitespace().nth(1).unwrap();
-            let domain = Domain::parse(&domain).unwrap();
+            let domain = Domain::parse(domain).unwrap();
             banished.push(domain);
         }
         let after = lines.map(|s| s.to_owned()).collect();
